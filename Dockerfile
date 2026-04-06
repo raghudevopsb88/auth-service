@@ -3,6 +3,7 @@ WORKDIR     /app
 COPY        ./ /app/
 RUN         CGO_ENABLED=0 go build -o auth-service ./cmd/server
 
-FROM      docker.io/redhat/ubi9
-COPY      --from=builder  /app/auth-service .
-RUN       ./auth-service
+FROM        docker.io/redhat/ubi9
+COPY        --from=builder  /app/auth-service .
+ENTRYPOINT  [ "./auth-service" ]
+
