@@ -8,5 +8,7 @@ eks-deploy:
 	aws eks update-kubeconfig --name dev
 	helm upgrade -i auth-service helm -f helm/values/auth-service.yml --set image_tag=$(image_tag)
 
-
+argocd-deploy:
+	argocd login $(argocd_server) --insecure --username admin --password $(argocd_admin_password)
+	argocd app create auth-service --sync-policy manual --repo https://github.com/raghudevopsb88/wmp-helm-v1.git --path . --dest-server https://kubernetes.default.svc   --dest-namespace default --helm-set-string image_tag=$(image_tag) --values values/auth-service.yml
 
