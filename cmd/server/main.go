@@ -18,6 +18,7 @@ import (
 	"github.com/wmp/auth-service/internal/repository"
 	"github.com/wmp/auth-service/internal/service"
 	"github.com/wmp/auth-service/migrations"
+	"github.com/newrelic/go-agent/v3/newrelic"
 )
 
 func main() {
