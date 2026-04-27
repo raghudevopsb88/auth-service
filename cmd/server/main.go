@@ -30,6 +30,7 @@ func main() {
 	// New Relic APM
 	var nrApp *newrelic.Application
 	if cfg.NewRelicLicenseKey != "" {
+		var err error
 		nrApp, err = newrelic.NewApplication(
 			newrelic.ConfigAppName(cfg.NewRelicAppName),
 			newrelic.ConfigLicense(cfg.NewRelicLicenseKey),
