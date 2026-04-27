@@ -8,9 +8,9 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.1
+	github.com/newrelic/go-agent/v3 v3.35.1
+	github.com/newrelic/go-agent/v3/integrations/nrchi v1.1.1
 	golang.org/x/crypto v0.28.0
-	github.com/newrelic/go-agent/v3 v3.43.2
-
 )
 
 require (

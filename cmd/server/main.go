@@ -11,6 +11,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
+	"github.com/newrelic/go-agent/v3/newrelic"
+	nrchi "github.com/newrelic/go-agent/v3/integrations/nrchi"
 
 	"github.com/wmp/auth-service/internal/config"
 	"github.com/wmp/auth-service/internal/database"
@@ -18,7 +20,6 @@ import (
 	"github.com/wmp/auth-service/internal/repository"
 	"github.com/wmp/auth-service/internal/service"
 	"github.com/wmp/auth-service/migrations"
-	"github.com/newrelic/go-agent/v3/newrelic"
 )
 
 func main() {
@@ -26,6 +27,21 @@ func main() {
 
 	cfg := config.Load()
 	ctx := context.Background()
+
+	// New Relic APM
+	var nrApp *newrelic.Application
+	if cfg.NewRelicLicenseKey != "" {
+		nrApp, err = newrelic.NewApplication(
+			newrelic.ConfigAppName(cfg.NewRelicAppName),
+			newrelic.ConfigLicense(cfg.NewRelicLicenseKey),
+			newrelic.ConfigDistributedTracerEnabled(true),
+		)
+		if err != nil {
+			slog.Error("failed to initialize New Relic", "error", err)
+		} else {
+			slog.Info("New Relic APM initialized", "appName", cfg.NewRelicAppName)
+		}
+	}
 
 	// Database
 	pool, err := database.NewPool(ctx, cfg)
@@ -64,6 +80,9 @@ func main() {
 		AllowCredentials: false,
 		MaxAge:           300,
 	}))
+	if nrApp != nil {
+		r.Use(nrchi.Middleware(nrApp))
+	}
 	r.Use(handler.LoggingMiddleware)
 	r.Use(handler.RecoveryMiddleware)
 
@@ -98,6 +117,9 @@ func main() {
 	defer cancel()
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		slog.Error("server shutdown error", "error", err)
+	}
+	if nrApp != nil {
+		nrApp.Shutdown(5 * time.Second)
 	}
 	slog.Info("server stopped")
 }

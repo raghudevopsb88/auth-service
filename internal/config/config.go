@@ -16,6 +16,8 @@ type Config struct {
 	JWTSecret           string
 	JWTExpirationMs     int64
 	PortfolioServiceURL string
+	NewRelicLicenseKey  string
+	NewRelicAppName     string
 }
 
 func Load() *Config {
@@ -30,6 +32,8 @@ func Load() *Config {
 		JWTSecret:           getEnv("JWT_SECRET", "myDefaultSuperSecretKeyThatIsAtLeast256BitsLongForHS256Algorithm"),
 		JWTExpirationMs:     getEnvInt64("JWT_EXPIRATION_MS", 86400000),
 		PortfolioServiceURL: getEnv("PORTFOLIO_SERVICE_URL", "http://localhost:8080"),
+		NewRelicLicenseKey:  getEnv("NEW_RELIC_LICENSE_KEY", ""),
+		NewRelicAppName:     getEnv("NEW_RELIC_APP_NAME", "auth-service"),
 	}
 }
 
