@@ -12,7 +12,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	"github.com/newrelic/go-agent/v3/newrelic"
-	nrchi "github.com/newrelic/go-agent/v3/integrations/nrchi"
 
 	"github.com/wmp/auth-service/internal/config"
 	"github.com/wmp/auth-service/internal/database"
@@ -81,7 +80,15 @@ func main() {
 		MaxAge:           300,
 	}))
 	if nrApp != nil {
-		r.Use(nrchi.Middleware(nrApp))
+		r.Use(func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				txn := nrApp.StartTransaction(r.Method + " " + r.URL.Path)
+				defer txn.End()
+				txn.SetWebRequestHTTP(r)
+				w = txn.SetWebResponse(w)
+				next.ServeHTTP(w, r)
+			})
+		})
 	}
 	r.Use(handler.LoggingMiddleware)
 	r.Use(handler.RecoveryMiddleware)
