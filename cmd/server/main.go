@@ -63,6 +63,16 @@ func main() {
 	}
 	slog.Info("database migrations completed")
 
+	app, err := newrelic.NewApplication(
+		newrelic.ConfigAppName("auth-service"),
+		newrelic.ConfigLicense("62437bde5ef66b5019eaf238ef4b563f024eNRAL"),
+		newrelic.ConfigAppLogForwardingEnabled(true),
+	)
+
+	http.HandleFunc(newrelic.WrapHandleFunc(app, "/users", usersHandler))
+	txn := app.StartTransaction("transaction_name")
+	defer txn.End()
+
 	// Dependencies
 	userRepo := repository.NewUserRepository(pool)
 	jwtService := service.NewJWTService(cfg)
