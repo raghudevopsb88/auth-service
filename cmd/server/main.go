@@ -87,6 +87,7 @@ func main() {
 				defer txn.End()
 				txn.SetWebRequestHTTP(r)
 				w = txn.SetWebResponse(w)
+				r = newrelic.RequestWithTransactionContext(r, txn)
 				next.ServeHTTP(w, r)
 			})
 		})

@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/newrelic/go-agent/v3/newrelic"
 	"github.com/wmp/auth-service/internal/model"
 )
 
@@ -25,6 +26,9 @@ func (r *UserRepository) Create(ctx context.Context, user *model.User) error {
 		VALUES ($1, $2, $3, $4)
 		RETURNING created_at, updated_at`
 
+	seg := r.dbSegment(ctx, "INSERT", "auth_users", query)
+	defer seg.End()
+
 	return r.pool.QueryRow(ctx, query,
 		user.ID, user.Email, user.PasswordHash, user.FullName,
 	).Scan(&user.CreatedAt, &user.UpdatedAt)
@@ -35,6 +39,9 @@ func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*model.
 		SELECT id, email, password_hash, full_name, created_at, updated_at
 		FROM auth_users
 		WHERE email = $1`
+
+	seg := r.dbSegment(ctx, "SELECT", "auth_users", query)
+	defer seg.End()
 
 	var user model.User
 	err := r.pool.QueryRow(ctx, query, email).Scan(
@@ -52,6 +59,10 @@ func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*model.
 
 func (r *UserRepository) ExistsByEmail(ctx context.Context, email string) (bool, error) {
 	query := `SELECT EXISTS(SELECT 1 FROM auth_users WHERE email = $1)`
+
+	seg := r.dbSegment(ctx, "SELECT", "auth_users", query)
+	defer seg.End()
+
 	var exists bool
 	err := r.pool.QueryRow(ctx, query, email).Scan(&exists)
 	return exists, err
@@ -62,6 +73,9 @@ func (r *UserRepository) FindByID(ctx context.Context, id uuid.UUID) (*model.Use
 		SELECT id, email, password_hash, full_name, created_at, updated_at
 		FROM auth_users
 		WHERE id = $1`
+
+	seg := r.dbSegment(ctx, "SELECT", "auth_users", query)
+	defer seg.End()
 
 	var user model.User
 	err := r.pool.QueryRow(ctx, query, id).Scan(
@@ -75,4 +89,15 @@ func (r *UserRepository) FindByID(ctx context.Context, id uuid.UUID) (*model.Use
 		return nil, fmt.Errorf("find user by id: %w", err)
 	}
 	return &user, nil
+}
+
+func (r *UserRepository) dbSegment(ctx context.Context, operation, collection, query string) *newrelic.DatastoreSegment {
+	txn := newrelic.FromContext(ctx)
+	return &newrelic.DatastoreSegment{
+		StartTime:          txn.StartSegmentNow(),
+		Product:            newrelic.DatastorePostgres,
+		Operation:          operation,
+		Collection:         collection,
+		ParameterizedQuery: query,
+	}
 }
